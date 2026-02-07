@@ -1,0 +1,18 @@
+# Ignore build folders
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# .NET Core
+*.dbmdl
+*.jfm
+*.pdb
+*.cache
+*.log
+
+# node modules (if any)
+node_modules/
