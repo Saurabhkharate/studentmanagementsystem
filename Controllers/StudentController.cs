@@ -43,7 +43,7 @@ namespace studentmanagementsystem.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(StudentInfo model, IFormFile ImageFile)
+        public async Task<IActionResult> Create(StudentInfo model, IFormFile? ImageFile)
         {
             if (ModelState.IsValid)
             {

@@ -64,7 +64,6 @@
                 </table>
             </div>
 
-            <!-- PAGINATION -->
             <div class="text-center mt-3">
                 @for (int i = 1; i <= ViewBag.TotalPages; i++)
                 {
@@ -85,22 +84,28 @@
         var id = checkbox.data("id");
         var status = checkbox.prop("checked");
 
-        if (!confirm("Are you sure you want to change status?")) {
-            checkbox.prop("checked", !status);
-            return;
+
+        if (!status) {
+            if (!confirm("Are you sure you want to deactivate this student?")) {
+                checkbox.prop("checked", true); 
+                return;
+            }
         }
 
+
         $.ajax({
-            url: '/Student/Delete',
+            url: '/Student/Delete',   
             type: 'POST',
             data: { id: id, status: status },
             success: function () {
-                alert("Status updated successfully");
+                console.log("Status updated");
             },
             error: function () {
                 alert("Error updating status");
+                checkbox.prop("checked", !status);
             }
         });
 
     });
 </script>
+
