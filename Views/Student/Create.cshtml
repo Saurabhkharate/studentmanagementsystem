@@ -92,7 +92,8 @@
 
                     <div class="col-md-4">
                         <label class="form-label">Image</label>
-                        <input type="file" name="ImageFile" class="form-control" />
+                        <input type="file" name="ImageFile" id="ImageFile" class="form-control" />
+                        <span class="text-danger" id="fileError"></span>
                     </div>
 
                 </div>
@@ -135,6 +136,46 @@
                 $("#CityId").html(data);
             });
         });
+            // file type validation
+    $("#ImageFile").change(function () {
+
+        var file = this.files[0];
+        if (!file) return;
+
+        var fileName = file.name.toLowerCase();
+        var allowedExtensions = [".jpg", ".jpeg", ".png"];
+
+        var isValid = allowedExtensions.some(function (ext) {
+            return fileName.endsWith(ext);
+        });
+
+        if (!isValid) {
+            $("#fileError").text("Only JPG, JPEG, PNG files allowed");
+            $("#ImageFile").val(""); 
+        } else {
+            $("#fileError").text("");
+        }
+    });
+
+    $("form").submit(function () {
+        var file = $("#ImageFile")[0].files[0];
+
+        if (file) {
+            var fileName = file.name.toLowerCase();
+            var allowedExtensions = [".jpg", ".jpeg", ".png"];
+
+            var isValid = allowedExtensions.some(function (ext) {
+                return fileName.endsWith(ext);
+            });
+
+            if (!isValid) {
+                $("#fileError").text("Only JPG, JPEG, PNG files allowed");
+                return false; 
+            }
+        }
+
+        return true;
+    });
 
     });
 </script>

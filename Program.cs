@@ -13,7 +13,7 @@ builder.Services.AddDbContext<AppDatabaseContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DbConnection")));
 
 builder.Services.AddScoped<IStudentRepository,StudentRepository>();
-
+builder.Services.AddScoped<IMasterRepository, MasterRepository>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

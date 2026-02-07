@@ -1,90 +1,82 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using studentmanagementsystem.DatabaseContext;
+using studentmanagementsystem.Interface;
 using studentmanagementsystem.Models;
 
-namespace studentmanagementsystem.Controllers
+public class MasterController : Controller
 {
-    public class MasterController : Controller
+    private readonly IMasterRepository masterRepo;
+
+    public MasterController(IMasterRepository _masterRepo)
     {
-        private readonly AppDatabaseContext db;
+        masterRepo = _masterRepo;
+    }
 
-        public MasterController(AppDatabaseContext context)
-        {
-            db = context;
-        }
+    // COUNTRY
+    public async Task<IActionResult> CountryList()
+    {
+        var data = await masterRepo.GetCountries();
+        return View(data);
+    }
 
-        // ================= COUNTRY =================
+    public IActionResult AddCountry()
+    {
+        return View();
+    }
 
-        public IActionResult CountryList()
-        {
-            var data = db.Countries.ToList();
-            return View(data);
-        }
+    [HttpPost]
+    public async Task<IActionResult> AddCountry(Country model)
+    {
+        await masterRepo.AddCountry(model);
+        await masterRepo.Save();
+        return RedirectToAction("CountryList");
+    }
 
-        public IActionResult AddCountry()
-        {
-            return View();
-        }
+    // STATE
+    public async Task<IActionResult> StateList()
+    {
+        var data = await masterRepo.GetStates();
+        return View(data);
+    }
 
-        [HttpPost]
-        public IActionResult AddCountry(Country model)
-        {
-            db.Countries.Add(model);
-            db.SaveChanges();
-            return RedirectToAction("CountryList");
-        }
+    public async Task<IActionResult> AddState()
+    {
+        ViewBag.Country = new SelectList(await masterRepo.GetCountries(), "Id", "CountryName");
+        return View();
+    }
 
-        // ================= STATE =================
+    [HttpPost]
+    public async Task<IActionResult> AddState(State model)
+    {
+        await masterRepo.AddState(model);
+        await masterRepo.Save();
+        return RedirectToAction("StateList");
+    }
 
-        public IActionResult StateList()
-        {
-            var data = db.States.Include(x => x.Country).ToList();
-            return View(data);
-        }
+    // CITY
+    public async Task<IActionResult> CityList()
+    {
+        var data = await masterRepo.GetCities();
+        return View(data);
+    }
 
-        public IActionResult AddState()
-        {
-            ViewBag.Country = new SelectList(db.Countries, "Id", "CountryName");
-            return View();
-        }
+    public async Task<IActionResult> AddCity()
+    {
+        ViewBag.Country = new SelectList(await masterRepo.GetCountries(), "Id", "CountryName");
+        return View();
+    }
 
-        [HttpPost]
-        public IActionResult AddState(State model)
-        {
-            db.States.Add(model);
-            db.SaveChanges();
-            return RedirectToAction("StateList");
-        }
+    [HttpPost]
+    public async Task<IActionResult> AddCity(City model)
+    {
+        await masterRepo.AddCity(model);
+        await masterRepo.Save();
+        return RedirectToAction("CityList");
+    }
 
-        // ================= CITY =================
-
-        public IActionResult CityList()
-        {
-            var data = db.Cities.Include(x => x.State).ThenInclude(s => s.Country).ToList();
-            return View(data);
-        }
-
-        public IActionResult AddCity()
-        {
-            ViewBag.Country = new SelectList(db.Countries, "Id", "CountryName");
-            return View();
-        }
-
-        [HttpPost]
-        public IActionResult AddCity(City model)
-        {
-            db.Cities.Add(model);
-            db.SaveChanges();
-            return RedirectToAction("CityList");
-        }
-
-        // AJAX for state dropdown
-        public JsonResult GetStates(int countryId)
-        {
-            var states = db.States.Where(x => x.CountryId == countryId).ToList();
-            return Json(states);
-        }
+    public async Task<JsonResult> GetStates(int countryId)
+    {
+        var states = await masterRepo.GetStatesByCountry(countryId);
+        return Json(states);
     }
 }

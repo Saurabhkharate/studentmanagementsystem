@@ -1,26 +1,23 @@
 ﻿using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query.Internal;
-using studentmanagementsystem.DatabaseContext;
+using studentmanagementsystem.Helpers;
 using studentmanagementsystem.Interface;
 using studentmanagementsystem.Models;
-using studentmanagementsystem.Repositories;
-using System.Threading.Tasks;
-
 namespace studentmanagementsystem.Controllers
 {
     public class StudentController : Controller
     {
         private readonly IStudentRepository studentRepository ;
         private readonly IWebHostEnvironment webHostEnvironment ;
-        private readonly AppDatabaseContext appDatabaseContext ;
-        public StudentController(IStudentRepository _studentRepository, IWebHostEnvironment webHostEnvironment, AppDatabaseContext _appDatabaseContext)
+        private readonly IMasterRepository masterRepository;
+        public StudentController(IStudentRepository _studentRepository,
+            IWebHostEnvironment webHostEnvironment,
+            IMasterRepository masterRepository)
         {
             this.studentRepository = _studentRepository;
             this.webHostEnvironment = webHostEnvironment;
-            this.appDatabaseContext = _appDatabaseContext;
+            this.masterRepository = masterRepository;
         }
 
         public async Task<IActionResult> Index(int page = 1)
@@ -47,39 +44,35 @@ namespace studentmanagementsystem.Controllers
         {
             if (ModelState.IsValid)
             {
-                model.Age = DateTime.Now.Year - model.DOB.Year;
-
-                if (ImageFile != null && ImageFile.Length > 0)
+                model.Age = DateTime.Today.Year - model.DOB.Year;
+                if (model.DOB.Date > DateTime.Today.AddYears(-model.Age))
                 {
-                    string uploadsFolder = Path.Combine(webHostEnvironment.WebRootPath, "Uploads");
-
-                    if (!Directory.Exists(uploadsFolder))
-                    {
-                        Directory.CreateDirectory(uploadsFolder);
-                    }
-
-                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(ImageFile.FileName);
-                    string filePath = Path.Combine(uploadsFolder, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        ImageFile.CopyTo(stream);
-                    }
-
-                    model.ImagePath = "/Uploads/" + fileName;
+                    model.Age--;
                 }
+                try
+                {
+                    if (ImageFile != null)
+                    {
+                        model.ImagePath = await FileHelper.SaveImageAsync(ImageFile, webHostEnvironment.WebRootPath);
+                    }
 
-                model.Status = true;
+                    model.Status = true;
 
-                await studentRepository.SaveStudent(model);
-                await studentRepository.Save();
+                    await studentRepository.SaveStudent(model);
+                    await studentRepository.Save();
 
-                return RedirectToAction("Index");
+                    return RedirectToAction("Index");
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError("", ex.Message);
+                }
             }
 
             LoadDropdowns();
             return View(model);
         }
+
 
         public async Task<ActionResult> Edit(int id)
         {
@@ -103,29 +96,21 @@ namespace studentmanagementsystem.Controllers
 
             return Ok();
         }
-        private void LoadDropdowns()
+        private async Task LoadDropdowns()
         {
-            
-                ViewBag.Country = new SelectList(appDatabaseContext.Countries.ToList(), "Id", "CountryName");
-            
+            var countries = await masterRepository.GetCountries();
+            ViewBag.Country = new SelectList(countries, "Id", "CountryName");
         }
-        // load states based on country
-        public IActionResult GetStates(int countryId)
-        {
-            var states = appDatabaseContext.States
-                .Where(x => x.CountryId == countryId)
-                .ToList();
 
+        public async Task<IActionResult> GetStates(int countryId)
+        {
+            var states = await masterRepository.GetStatesByCountry(countryId);
             return PartialView("_StateDropdown", states);
         }
 
-        // load cities based on state
-        public IActionResult GetCities(int stateId)
+        public async Task<IActionResult> GetCities(int stateId)
         {
-            var cities = appDatabaseContext.Cities
-                .Where(x => x.StateId == stateId)
-                .ToList();
-
+            var cities = await masterRepository.GetCitiesByState(stateId);
             return PartialView("_CityDropdown", cities);
         }
 
